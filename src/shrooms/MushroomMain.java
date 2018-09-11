@@ -48,8 +48,9 @@ public class MushroomMain {
 
     private static Node ID3(ArrayList<Mushroom> shrooms, HashSet<String> features, int depth) {
         //If all shrooms have the same label, return a leaf with that label
-        if (checkAllSameLabel(shrooms) != null) {
-            //TODO
+        String sameyLabel = checkAllSameLabel(shrooms);
+        if (sameyLabel != null) {
+            return new Node(sameyLabel, depth, true);
         }
 
 
@@ -62,8 +63,7 @@ public class MushroomMain {
         //Determine best feature to discriminate by at this point
         //Using InfoGain
         String bestFeature = "";
-
-        //TODO
+        
         double maxGain = 0;
         for (String eachFeat : features) {
             double infoGain = infoGain(eachFeat, "label", shrooms);
