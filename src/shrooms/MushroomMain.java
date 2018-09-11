@@ -11,7 +11,7 @@ import java.util.HashSet;
 
 public class MushroomMain {
     //The list of shrooms.  Constantly queried.
-    private static ArrayList<Mushroom> allShrooms;
+    //private static ArrayList<Mushroom> allShrooms;
 
     //A list of features mapped to possible answers
     private static HashMap<String, ArrayList<String>> featureList;
@@ -23,12 +23,12 @@ public class MushroomMain {
     public static void main(String[] args) {
 
         //createShrooms("src/train.csv");
-        createShrooms("src/train.csv");
+        ArrayList<Mushroom> trainShrooms = createShrooms("src/train.csv");
 
 
-        ArrayList<Mushroom> shrooms = new ArrayList<>(allShrooms);
+        ArrayList<Mushroom> shrooms = new ArrayList<>(trainShrooms);
 
-        for (Mushroom mush : allShrooms) {
+        for (Mushroom mush : trainShrooms) {
 
             //Grab each unique value for each feature, and add it to featureList
             for (String feat : Mushroom.featureList) {
@@ -48,8 +48,12 @@ public class MushroomMain {
 
         Node root = ID3(shrooms, feats, 1);
 
-        if(DEBUG) System.out.println(root.name);
+        if (DEBUG) System.out.println(root.name);
 
+
+        double error = shroomError(root, "src/test.csv");
+        if(DEBUG)
+            System.out.println("Error: " + error);
 
     }
 
@@ -134,7 +138,7 @@ public class MushroomMain {
 
             double thisEntropy = entropy(label, nextShrooms);
 
-            expectedEntropy += (( (double)(nextShrooms.size()) / (double)(shrooms.size())) * thisEntropy);
+            expectedEntropy += (((double) (nextShrooms.size()) / (double) (shrooms.size())) * thisEntropy);
 
 
         }
@@ -158,7 +162,7 @@ public class MushroomMain {
         double entropy = 0;
 
         for (double eachP : valueCounts) {
-            if(eachP == 0.0)
+            if (eachP == 0.0)
                 continue;
 
             double proportion = (eachP / total);
@@ -216,9 +220,31 @@ public class MushroomMain {
         return label;
     }
 
+    private static double shroomError(Node root, String fileName) {
+        int fail = 0;
 
-    private static void createShrooms(String fileName) {
-        allShrooms = new ArrayList<Mushroom>();
+        ArrayList<Mushroom> testShrooms = createShrooms(fileName);
+
+        for (Mushroom shroom : testShrooms) {
+            Node currentNode = root;
+            String expected = shroom.getAtt("label");
+
+            while (!currentNode.isLeaf()) {
+                String nextPath = shroom.getAtt(currentNode.name);
+                currentNode = currentNode.followPath(nextPath);
+            }
+
+            if (!expected.equals(currentNode.name))
+                fail++;
+            }
+
+        double percentFailed = (double)fail / (double)(testShrooms.size());
+        return percentFailed;
+    }
+
+
+    private static ArrayList<Mushroom> createShrooms(String fileName) {
+        ArrayList<Mushroom> shrooms = new ArrayList<Mushroom>();
 
         BufferedReader reader = null;
         String line = "";
@@ -238,7 +264,7 @@ public class MushroomMain {
 
             while ((line = reader.readLine()) != null) {
                 Mushroom next = new Mushroom(line);
-                allShrooms.add(next);
+                shrooms.add(next);
             }
         } catch (FileNotFoundException e) {
             System.out.println("File " + fileName + " not found.");
@@ -253,5 +279,7 @@ public class MushroomMain {
                 }
             }
         }
+
+        return shrooms;
     }
 }
