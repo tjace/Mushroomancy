@@ -49,7 +49,7 @@ public class MushroomMain {
         String bestFeature = "";
 
         //For each value of the feature (e.g. sweet, spicy, mild)
-        //enact again ID3 using only the surviving allShrooms
+        //enact again ID3 using only the surviving shrooms
 
         for (String att : featureList.get(bestFeature))
         {
@@ -67,7 +67,7 @@ public class MushroomMain {
             if (nextShrooms.size() == 0)
             {
                 String commonLabel = findCommonLabel(shrooms);
-                Node endNode = new Node(depth + 1)
+                Node endNode = new Node(commonLabel, depth + 1, true);
             }
             else{
 
@@ -76,6 +76,36 @@ public class MushroomMain {
         }
 
         return null;
+    }
+
+
+    private static String findCommonLabel(ArrayList<Mushroom> shrooms)
+    {
+        HashMap<String, Integer> counters = new HashMap<>();
+        String maxLabel = "";
+
+        for (Mushroom mush : shrooms)
+        {
+            String label = mush.getAtt("label");
+
+            if (counters.containsKey(label))
+                counters.put(label, 1);
+            else
+                counters.put(label, counters.get(label) + 1);
+        }
+
+        int max = 0;
+
+        for(String eachLabel : counters.keySet())
+        {
+            if(counters.get(eachLabel) > max)
+            {
+                max = counters.get(eachLabel);
+                maxLabel = eachLabel;
+            }
+        }
+
+        return maxLabel;
     }
 
 
