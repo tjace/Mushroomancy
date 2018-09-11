@@ -28,4 +28,22 @@ public class Node {
     public Node followPath(String path) {
         return children.get(path);
     }
+
+    public int findMaxDepth()
+    {
+        if (leaf)
+            return depth;
+
+        int max = 0;
+        for (Node each : children.values())
+        {
+            int eachDepth = each.findMaxDepth();
+
+            if(eachDepth > max)
+                max = eachDepth;
+        }
+
+        return max;
+
+    }
 }

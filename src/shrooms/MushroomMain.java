@@ -39,7 +39,7 @@ public class MushroomMain {
                 }
             }
 
-            if (DEBUG)
+            if (false)
                 System.out.println(mush);
         }
 
@@ -49,6 +49,8 @@ public class MushroomMain {
         Node root = ID3(shrooms, feats, 1);
 
         if (DEBUG) System.out.println(root.name);
+        int maxDepth = root.findMaxDepth();
+        if (DEBUG) System.out.println("Max depth: " + maxDepth);
 
 
         double error = shroomError(root, "src/test.csv");
@@ -229,10 +231,20 @@ public class MushroomMain {
             Node currentNode = root;
             String expected = shroom.getAtt("label");
 
+            String debug = "";
+            if(true)
+                System.out.println(shroom);
+
             while (!currentNode.isLeaf()) {
                 String nextPath = shroom.getAtt(currentNode.name);
+
+                debug += currentNode.name + ": " + nextPath + " ==> ";
+
                 currentNode = currentNode.followPath(nextPath);
             }
+
+            debug += currentNode.name;
+            System.out.println(debug + "");
 
             if (!expected.equals(currentNode.name))
                 fail++;

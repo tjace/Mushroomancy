@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="Mushroomancy:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/Mushroomancy_jar</output-path>
+    <root id="archive" name="Mushroomancy.jar">
+      <element id="module-output" name="Mushroomancy" />
+    </root>
+  </artifact>
+</component>
