@@ -22,9 +22,11 @@ public class MushroomMain {
 
     public static void main(String[] args) {
 
+        //createShrooms("src/train.csv");
         createShrooms("src/train.csv");
 
-        ArrayList<Mushroom> shrooms = new ArrayList<>();
+
+        ArrayList<Mushroom> shrooms = new ArrayList<>(allShrooms);
 
         for (Mushroom mush : allShrooms) {
 
@@ -42,7 +44,12 @@ public class MushroomMain {
         }
 
         HashSet<String> feats = new HashSet<>(featureList.keySet());
+        feats.remove("label");
+
         Node root = ID3(shrooms, feats, 1);
+
+        if(DEBUG) System.out.println(root.name);
+
 
     }
 
@@ -63,7 +70,7 @@ public class MushroomMain {
         //Determine best feature to discriminate by at this point
         //Using InfoGain
         String bestFeature = "";
-        
+
         double maxGain = 0;
         for (String eachFeat : features) {
             double infoGain = infoGain(eachFeat, "label", shrooms);
@@ -127,7 +134,7 @@ public class MushroomMain {
 
             double thisEntropy = entropy(label, nextShrooms);
 
-            expectedEntropy += ((nextShrooms.size() / shrooms.size()) * thisEntropy);
+            expectedEntropy += (( (double)(nextShrooms.size()) / (double)(shrooms.size())) * thisEntropy);
 
 
         }
@@ -151,7 +158,12 @@ public class MushroomMain {
         double entropy = 0;
 
         for (double eachP : valueCounts) {
-            entropy -= ((eachP / total) * (logBase2(eachP)));
+            if(eachP == 0.0)
+                continue;
+
+            double proportion = (eachP / total);
+            double logResult = logBase2(proportion);
+            entropy -= (proportion * logResult);
         }
 
         return entropy;
@@ -170,9 +182,9 @@ public class MushroomMain {
             String label = mush.getAtt("label");
 
             if (counters.containsKey(label))
-                counters.put(label, 1);
-            else
                 counters.put(label, counters.get(label) + 1);
+            else
+                counters.put(label, 1);
         }
 
         int max = 0;

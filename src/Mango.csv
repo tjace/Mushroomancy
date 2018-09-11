@@ -1,0 +1,9 @@
+Variety,Color,Smell,Time,label
+Alphonso,Red,None,Two,False
+Keitt,Red,None,One,True
+Alphonso,Yellow,Sweet,Two,True
+Keitt,Green,None,Two,False
+Haden,Green,Sweet,One,True
+Alphonso,Yellow,None,Two,False
+Keitt,Yellow,Sweet,One,False
+Alphonso,Red,Sweet,Two,True
