@@ -24,18 +24,8 @@ public class MushroomMain {
 
         ArrayList<Mushroom> shrooms = new ArrayList<>(trainShrooms);
 
-        for (Mushroom mush : trainShrooms) {
-
-            //Grab each unique value for each feature, and add it to featureList
-            for (String feat : Mushroom.featureList) {
-                String att = mush.getAtt(feat);
-
-                if (!featureList.get(feat).contains(att)) {
-                    featureList.get(feat).add(att);
-                }
-            }
-
-        }
+        //Grab each unique value for each feature, and add it to featureList
+        fillFeatures(trainShrooms);
 
         HashSet<String> feats = new HashSet<>(featureList.keySet());
         feats.remove("label");
@@ -51,7 +41,141 @@ public class MushroomMain {
         System.out.println("Max depth: " + maxDepth);
 
 
+        //Now, part 2: 5-fold cross-validation with various levels of depth.
+
+
+        ArrayList<String> files = new ArrayList<>();
+        files.add("src/fold1.csv");
+        files.add("src/fold2.csv");
+        files.add("src/fold3.csv");
+        files.add("src/fold4.csv");
+        files.add("src/fold5.csv");
+
+        ArrayList<Integer> depths = new ArrayList<>();
+        for (int i = 1; i <= 5; i++) {
+            depths.add(i);
+        }
+        depths.add(10);
+        depths.add(15);
+
+        int bestDepth = findBestDepth(files, depths);
+
+        for (int i = 1; i <= 5; i++) {
+            enactKFold(files, i);
+        }
+        enactKFold(files, 10);
+        enactKFold(files, 15);
+
+
     }
+
+    private static int findBestDepth(List<String> fileNames, List<Integer> depths) {
+        int bestDepth = 0;
+        double leastError = -1.0;
+
+        for (int i = 0; i < depths.size(); i++) {
+            int depth = depths.get(i);
+            double avgError = enactKFold(fileNames, depth);
+
+            if (avgError < leastError || leastError == -1.0) {
+                bestDepth = depth;
+                leastError = avgError;
+            }
+        }
+
+        System.out.println("Best depth is " + bestDepth + "; average error was " + leastError);
+
+        return bestDepth;
+    }
+
+    /**
+     * @param fileNames
+     * @param maxDepth
+     * @return the
+     */
+    private static double enactKFold(List<String> fileNames, int maxDepth) {
+        int k = fileNames.size();
+        double totalError = 0.0;
+        ArrayList<Double> errors = new ArrayList<Double>(k);
+
+        for (int i = 0; i < k; i++) {
+            //Create the shrooms from all but entry i
+            ArrayList<String> filesMinusOne = new ArrayList<>();
+            String outcast = "";
+
+            for (int j = 0; j < k; j++) {
+                if (j != i)
+                    filesMinusOne.add(fileNames.get(j));
+                else
+                    outcast = fileNames.get(j);
+            }
+
+            ArrayList<Mushroom> shrooms = createShrooms(filesMinusOne);
+
+            fillFeatures(shrooms);
+            HashSet<String> feats = new HashSet<>(featureList.keySet());
+            feats.remove("label");
+
+
+            //Train
+            Node root = ID3(shrooms, feats, 1, maxDepth);
+
+
+            //Test
+            double error = shroomError(root, fileNames.get(i));
+
+
+            //Print the data
+            System.out.println("\n~~~~~~~");
+            System.out.println("outcast: " + outcast + "(max depth: " + maxDepth + ")");
+            System.out.println("Error: " + error);
+
+            errors.add(error);
+            totalError += error;
+        }
+
+        double avgError = totalError / (double) k;
+        double errorDeviation = findStandardDeviation(avgError, errors);
+
+        System.out.println("\n##########################");
+        System.out.println("Max Depth: " + maxDepth);
+        System.out.println("Average Error: " + avgError);
+        System.out.println("Standard Deviation: " + errorDeviation + "\n\n\n");
+
+        return avgError;
+    }
+
+
+    private static double findStandardDeviation(double avgError, ArrayList<Double> errors) {
+        double squaresSum = 0;
+
+        for (double err : errors) {
+            double x = (err - avgError);
+            x = x * x;
+
+            squaresSum += x;
+        }
+
+        double ret = squaresSum / ((double) (errors.size() - 1));
+        ret = Math.sqrt(ret);
+
+        return ret;
+    }
+
+
+    private static void fillFeatures(ArrayList<Mushroom> shrooms) {
+        for (Mushroom mush : shrooms) {
+
+            for (String feat : Mushroom.featureList) {
+                String att = mush.getAtt(feat);
+
+                if (!featureList.get(feat).contains(att)) {
+                    featureList.get(feat).add(att);
+                }
+            }
+        }
+    }
+
 
     /**
      * if maxDepth == -1, there is no max.
@@ -119,8 +243,11 @@ public class MushroomMain {
             }
 
             thisNode.add(nextAtt, nextNode);
-
         }
+
+        //Set a default node, just in case.
+        String defaultLabel = findCommonLabel(shrooms);
+        thisNode.add("", new Node(defaultLabel, depth + 1, true));
 
         return thisNode;
     }
@@ -234,20 +361,21 @@ public class MushroomMain {
             Node currentNode = root;
             String expected = shroom.getAtt("label");
 
-            String debug = "";
-            if (true)
-                System.out.println(shroom);
+            StringBuilder debug = new StringBuilder();
 
             while (!currentNode.isLeaf()) {
                 String nextPath = shroom.getAtt(currentNode.name);
 
-                debug += currentNode.name + ": " + nextPath + " ==> ";
-
-                currentNode = currentNode.followPath(nextPath);
+                //System.out.println(currentNode.name + " ==> " + nextPath);
+                //debug.append(currentNode.name).append(": ").append(nextPath).append(" ==> ");
+                if (currentNode.has(nextPath))
+                    currentNode = currentNode.followPath(nextPath);
+                else
+                    currentNode = currentNode.followDefaultPath();
             }
 
-            debug += currentNode.name;
-            System.out.println(debug + "");
+            //debug.append(currentNode.name);
+            //System.out.println(debug + "");
 
             if (!expected.equals(currentNode.name))
                 fail++;
@@ -265,11 +393,16 @@ public class MushroomMain {
 
         boolean init = true;
         for (String fileName : fileNames) {
-            shrooms.addAll(createShrooms(fileName), init);
+            shrooms.addAll(createShrooms(fileName, init));
             init = false;
         }
 
         return shrooms;
+    }
+
+
+    private static ArrayList<Mushroom> createShrooms(String fileName) {
+        return createShrooms(fileName, true);
     }
 
 

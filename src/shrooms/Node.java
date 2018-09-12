@@ -46,4 +46,12 @@ public class Node {
         return max;
 
     }
+
+    public boolean has(String path) {
+        return children.containsKey(path);
+    }
+
+    public Node followDefaultPath() {
+        return children.get("");
+    }
 }

@@ -33,12 +33,12 @@ public class Mushroom
 	@Override
 	public String toString()
 	{
-		String ret = "Shroom:\n";
+		StringBuilder ret = new StringBuilder("Shroom:\n");
 		for(String feat : featureList)
 		{
-			ret += feat + ": " + atts.get(feat) + "\n";
+			ret.append(feat).append(": ").append(atts.get(feat)).append("\n");
 		}
 		
-		return ret;
+		return ret.toString();
 	}
 }
