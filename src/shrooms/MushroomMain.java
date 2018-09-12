@@ -32,13 +32,16 @@ public class MushroomMain {
 
         Node root = ID3(shrooms, feats, 1, -1);
 
-        if (DEBUG) System.out.println(root.name);
-
         int maxDepth = root.findMaxDepth();
 
         double error = shroomError(root, "src/test.csv");
+
+        System.out.println("##########################");
+        System.out.println("Question 1: no max depth specified.");
+        System.out.println("Trained on src/train.csv");
         System.out.println("Error: " + error);
         System.out.println("Max depth: " + maxDepth);
+        System.out.println("##########################");
 
 
         //Now, part 2: 5-fold cross-validation with various levels of depth.
@@ -60,13 +63,26 @@ public class MushroomMain {
 
         int bestDepth = findBestDepth(files, depths);
 
-        for (int i = 1; i <= 5; i++) {
-            enactKFold(files, i);
-        }
-        enactKFold(files, 10);
-        enactKFold(files, 15);
 
+        //Final part: use the best depth found and repeat the first experiment
 
+        trainShrooms = createShrooms("src/train.csv", true);
+
+        shrooms = new ArrayList<>(trainShrooms);
+
+        fillFeatures(trainShrooms);
+
+        feats = new HashSet<>(featureList.keySet());
+        feats.remove("label");
+
+        root = ID3(shrooms, feats, 1, -1);
+        error = shroomError(root, "src/test.csv");
+
+        System.out.println("\n\n\n##########################");
+        System.out.println("Trained on src/train.csv, tested on src/test.csv");
+        System.out.println("Max depth set as " + bestDepth + " as per previous experiment.");
+        System.out.println("Error: " + error);
+        System.out.println("##########################");
     }
 
     private static int findBestDepth(List<String> fileNames, List<Integer> depths) {
@@ -127,7 +143,7 @@ public class MushroomMain {
 
             //Print the data
             System.out.println("\n~~~~~~~");
-            System.out.println("outcast: " + outcast + "(max depth: " + maxDepth + ")");
+            System.out.println("outcast: " + outcast + " (max depth: " + maxDepth + ")");
             System.out.println("Error: " + error);
 
             errors.add(error);
@@ -140,7 +156,7 @@ public class MushroomMain {
         System.out.println("\n##########################");
         System.out.println("Max Depth: " + maxDepth);
         System.out.println("Average Error: " + avgError);
-        System.out.println("Standard Deviation: " + errorDeviation + "\n\n\n");
+        System.out.println("Standard Deviation: " + errorDeviation + "\n##########################" + "\n\n\n");
 
         return avgError;
     }
