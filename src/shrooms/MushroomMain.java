@@ -4,14 +4,10 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 
 public class MushroomMain {
     //The list of shrooms.  Constantly queried.
-    //private static ArrayList<Mushroom> allShrooms;
 
     //A list of features mapped to possible answers
     private static HashMap<String, ArrayList<String>> featureList;
@@ -23,7 +19,7 @@ public class MushroomMain {
     public static void main(String[] args) {
 
         //createShrooms("src/train.csv");
-        ArrayList<Mushroom> trainShrooms = createShrooms("src/train.csv");
+        ArrayList<Mushroom> trainShrooms = createShrooms("src/train.csv", true);
 
 
         ArrayList<Mushroom> shrooms = new ArrayList<>(trainShrooms);
@@ -39,31 +35,38 @@ public class MushroomMain {
                 }
             }
 
-            if (false)
-                System.out.println(mush);
         }
 
         HashSet<String> feats = new HashSet<>(featureList.keySet());
         feats.remove("label");
 
-        Node root = ID3(shrooms, feats, 1);
+        Node root = ID3(shrooms, feats, 1, -1);
 
         if (DEBUG) System.out.println(root.name);
-        int maxDepth = root.findMaxDepth();
-        if (DEBUG) System.out.println("Max depth: " + maxDepth);
 
+        int maxDepth = root.findMaxDepth();
 
         double error = shroomError(root, "src/test.csv");
-        if(DEBUG)
-            System.out.println("Error: " + error);
+        System.out.println("Error: " + error);
+        System.out.println("Max depth: " + maxDepth);
+
 
     }
 
-    private static Node ID3(ArrayList<Mushroom> shrooms, HashSet<String> features, int depth) {
+    /**
+     * if maxDepth == -1, there is no max.
+     */
+    private static Node ID3(ArrayList<Mushroom> shrooms, HashSet<String> features, int depth, int maxDepth) {
         //If all shrooms have the same label, return a leaf with that label
         String sameyLabel = checkAllSameLabel(shrooms);
         if (sameyLabel != null) {
             return new Node(sameyLabel, depth, true);
+        }
+
+        //If this is the lowest a node can be, it'll have to be a leaf.
+        if (maxDepth != -1 && depth == maxDepth) {
+            String commonLabel = findCommonLabel(shrooms);
+            return new Node(commonLabel, depth, true);
         }
 
 
@@ -112,7 +115,7 @@ public class MushroomMain {
                 String commonLabel = findCommonLabel(shrooms);
                 nextNode = new Node(commonLabel, depth + 1, true);
             } else {
-                nextNode = ID3(nextShrooms, nextFeatures, depth + 1);
+                nextNode = ID3(nextShrooms, nextFeatures, depth + 1, maxDepth);
             }
 
             thisNode.add(nextAtt, nextNode);
@@ -232,7 +235,7 @@ public class MushroomMain {
             String expected = shroom.getAtt("label");
 
             String debug = "";
-            if(true)
+            if (true)
                 System.out.println(shroom);
 
             while (!currentNode.isLeaf()) {
@@ -248,14 +251,29 @@ public class MushroomMain {
 
             if (!expected.equals(currentNode.name))
                 fail++;
-            }
+        }
 
-        double percentFailed = (double)fail / (double)(testShrooms.size());
+        double percentFailed = (double) fail / (double) (testShrooms.size());
         return percentFailed;
     }
 
+    /**
+     * Creates one array of shrooms from multiple files.
+     */
+    private static ArrayList<Mushroom> createShrooms(Collection<String> fileNames) {
+        ArrayList<Mushroom> shrooms = new ArrayList<Mushroom>();
 
-    private static ArrayList<Mushroom> createShrooms(String fileName) {
+        boolean init = true;
+        for (String fileName : fileNames) {
+            shrooms.addAll(createShrooms(fileName), init);
+            init = false;
+        }
+
+        return shrooms;
+    }
+
+
+    private static ArrayList<Mushroom> createShrooms(String fileName, boolean initializeFeatures) {
         ArrayList<Mushroom> shrooms = new ArrayList<Mushroom>();
 
         BufferedReader reader = null;
@@ -266,13 +284,15 @@ public class MushroomMain {
 
             // First, grab the features out.
             line = reader.readLine();
-            Mushroom.featureList = new ArrayList<String>();
-            featureList = new HashMap<>();
-            for (String eachFeat : line.split(",")) {
-                Mushroom.featureList.add(eachFeat);
-                featureList.put(eachFeat, new ArrayList<String>());
-            }
 
+            if (initializeFeatures) {
+                Mushroom.featureList = new ArrayList<String>();
+                featureList = new HashMap<>();
+                for (String eachFeat : line.split(",")) {
+                    Mushroom.featureList.add(eachFeat);
+                    featureList.put(eachFeat, new ArrayList<String>());
+                }
+            }
 
             while ((line = reader.readLine()) != null) {
                 Mushroom next = new Mushroom(line);
